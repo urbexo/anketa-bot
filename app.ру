@@ -1,0 +1,50 @@
+import telebot
+from telebot import types
+import os
+
+TOKEN = os.environ.get("BOT_TOKEN")
+bot = telebot.TeleBot(TOKEN)
+
+user_data = {}
+
+@bot.message_handler(commands=['start'])
+def start(message):
+    bot.send_message(message.chat.id, "Привет. Заполним анкету.\n\nКак тебя зовут?")
+    user_data[message.chat.id] = {}
+
+@bot.message_handler(func=lambda message: message.chat.id in user_data and "name" not in user_data[message.chat.id])
+def get_name(message):
+    user_data[message.chat.id]["name"] = message.text
+    bot.send_message(message.chat.id, "Возраст?")
+    
+@bot.message_handler(func=lambda message: "name" in user_data.get(message.chat.id, {}) and "age" not in user_data[message.chat.id])
+def get_age(message):
+    user_data[message.chat.id]["age"] = message.text
+    bot.send_message(message.chat.id, "Район метро?")
+    
+@bot.message_handler(func=lambda message: "age" in user_data.get(message.chat.id, {}) and "metro" not in user_data[message.chat.id])
+def get_metro(message):
+    user_data[message.chat.id]["metro"] = message.text
+    bot.send_message(message.chat.id, "Опиши услуги:")
+    
+@bot.message_handler(func=lambda message: "metro" in user_data.get(message.chat.id, {}) and "about" not in user_data[message.chat.id])
+def get_about(message):
+    user_data[message.chat.id]["about"] = message.text
+    
+    data = user_data[message.chat.id]
+    
+    text = f"""
+Новая анкета:
+
+Имя: {data['name']}
+Возраст: {data['age']}
+Метро: {data['metro']}
+Описание: {data['about']}
+"""
+    
+    bot.send_message(message.chat.id, "Анкета сохранена ✅")
+    print(text)
+    
+    del user_data[message.chat.id]
+
+bot.polling()
